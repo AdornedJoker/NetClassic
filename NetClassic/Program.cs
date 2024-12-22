@@ -20,7 +20,7 @@ namespace NetClassic
 
         public static bool isOnline = false;
 
-        public static TcpListener server = new TcpListener(IPAddress.Parse("192.168.1.103"), 25565);
+        public static TcpListener server = new TcpListener(IPAddress.Parse(""), 25565);
     }
 
     internal class Program
