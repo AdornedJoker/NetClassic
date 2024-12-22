@@ -4,6 +4,7 @@ using ClassicWorld.NET;
 using System.Net.Sockets;
 using System.Net;
 using Newtonsoft.Json;
+using System.Reflection;
 
 namespace NetClassic
 {
@@ -11,7 +12,7 @@ namespace NetClassic
     {
         public static List<Client> clients = new List<Client>();
         
-        public static Classicworld world = new Classicworld("F:\\Project\\NetClassic\\serverLevel.cw");
+        public static Classicworld world = new Classicworld(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)+ "\\serverLevel.cw");
 
         public static int MaxPlayers = 16;
 

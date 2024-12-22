@@ -17,3 +17,4 @@ F:\Project\NetClassic\obj\Debug\net9.0\NetClassic.genruntimeconfig.cache
 F:\Project\NetClassic\obj\Debug\net9.0\ref\NetClassic.dll
 F:\Project\NetClassic\bin\Debug\net9.0\fNbt.dll
 F:\Project\NetClassic\bin\Debug\net9.0\Newtonsoft.Json.dll
+F:\Project\NetClassic\obj\Debug\net9.0\NetClassic.sourcelink.json
