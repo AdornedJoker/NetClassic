@@ -9,3 +9,7 @@ Not all features are supported yet:
 ~Flooding
 
 ~Physics
+
+~Commands
+
+~GUI
