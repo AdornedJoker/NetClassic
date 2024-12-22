@@ -16,11 +16,13 @@ namespace NetClassic
 
         public static int MaxPlayers = 16;
 
+        public static bool nameVerfication = true;
+
         public static string salt = "92B4w7t0kF9m8G5r";
 
         public static bool isOnline = false;
 
-        public static TcpListener server = new TcpListener(IPAddress.Parse(""), 25565);
+        public static TcpListener server = new TcpListener(IPAddress.Any, 25565);
     }
 
     internal class Program

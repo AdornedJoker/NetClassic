@@ -8,6 +8,7 @@ namespace NetClassic
     {
         public byte[] SendPacket(string message)
         {
+            Console.WriteLine("Kicking player");
             MemoryStream ms = new MemoryStream();
             ms.WriteByte((byte)ServerPacketTypes.DisconnectPlayer); //Packet ID
             ms.Write(ReadWrite.WriteString(message));

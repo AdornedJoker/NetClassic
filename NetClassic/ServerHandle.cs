@@ -72,74 +72,78 @@ namespace NetClassic
         {
             try
             {
-            PlayerIdentification packet = new PlayerIdentification();
-            packet.ReadPacket(networkPacket);
+                PlayerIdentification packet = new PlayerIdentification();
+                packet.ReadPacket(networkPacket);
 
-            int protocolID = packet.protocolID;
-            string? username = packet.username;
-            string? key = packet.key;
+                int protocolID = packet.protocolID;
+                string? username = packet.username;
+                string? key = packet.key;
 
-            Console.WriteLine("Protocol ID: " + protocolID);
-            Console.WriteLine("Username: " + username);
-            Console.WriteLine("Key: " + key);
+                Console.WriteLine("Protocol ID: " + protocolID);
+                Console.WriteLine("Username: " + username);
+                Console.WriteLine("Key: " + key);
 
-            foreach (var client in Globals.clients)
-            {
-                if (client.id == id)
+                foreach (var client in Globals.clients)
                 {
-                    client.username = username;
-                    //client.id = id;
-                    client.inGame = true;
-                    Console.WriteLine(client.id);
-                    break;
+                    if (client.id == id)
+                    {
+                        client.username = username;
+                        //client.id = id;
+                        client.inGame = true;
+                        Console.WriteLine(client.id);
+                        break;
+                    }
                 }
-            }
 
-            //If the key is empty, it's a local connection.
-            if(key != "")
-            {
-                //Name verification.
-                if(key == CreateMD5(Globals.salt + username))
+                //If the key is empty, it's a local connection.
+                if(key != "" && Globals.nameVerfication)
                 {
-                    Console.WriteLine("This person logged on to ClassiCube!");
-                } 
-                else 
-                {
-                    Console.WriteLine("This player is forging a username!");
+                    //Name verification.
+                    if(key == CreateMD5(Globals.salt + username))
+                    {
+                        Console.WriteLine("This person logged on to ClassiCube!");
+                    } 
+                    else 
+                    {
+                        DisconnectPlayer disconnectPacket = new DisconnectPlayer();
+                        await stream.WriteAsync(disconnectPacket.SendPacket("Illegal name"));
+                        Globals.clients[id].Disconnect();
+                    }
                 }
-            }
 
-
-            await stream.WriteAsync(packet.SendPacket(packet.protocolID));
-
-            LevelInitialize packet2 = new LevelInitialize();
-
-            await stream.WriteAsync(packet2.SendPacket());
-
-            LevelDataChunk levelDataChunk = new LevelDataChunk();
-
-            await levelDataChunk.SendPacket(stream);
-
-            LevelFinalize levelFinalize = new LevelFinalize();
-
-            await stream.WriteAsync(levelFinalize.SendPacket());
-
-            SpawnPlayer spawnPlayer = new SpawnPlayer();
-
-            await stream.WriteAsync(spawnPlayer.SendPacket(-1, username));
-            Console.WriteLine(id);
-            SendAllPlayersExcept(id, spawnPlayer.SendPacket((sbyte)id, username));
-            //Sending other players to you
-            foreach (var client in Globals.clients)
-            {
-                if(client.id != id && client.playerClient != null)
+                if (Globals.clients[id].playerClient != null)
                 {
-                    await stream.WriteAsync(spawnPlayer.SendPacket((sbyte)client.id, client.username));
-                    Console.WriteLine("sent player.");
-                }
-            }    
+                    await stream.WriteAsync(packet.SendPacket(packet.protocolID));
 
-            SendAllPlayers(GameMessage.SendPacket(255, packet.username + " joined the game"));  
+                    LevelInitialize packet2 = new LevelInitialize();
+
+                    await stream.WriteAsync(packet2.SendPacket());
+
+                    LevelDataChunk levelDataChunk = new LevelDataChunk();
+
+                    await levelDataChunk.SendPacket(stream);
+
+                    LevelFinalize levelFinalize = new LevelFinalize();
+
+                    await stream.WriteAsync(levelFinalize.SendPacket());
+
+                    SpawnPlayer spawnPlayer = new SpawnPlayer();
+
+                    await stream.WriteAsync(spawnPlayer.SendPacket(-1, username));
+                    Console.WriteLine(id);
+                    SendAllPlayersExcept(id, spawnPlayer.SendPacket((sbyte)id, username));
+                    //Sending other players to you
+                    foreach (var client in Globals.clients)
+                    {
+                        if(client.id != id && client.playerClient != null)
+                        {
+                            await stream.WriteAsync(spawnPlayer.SendPacket((sbyte)client.id, client.username));
+                            Console.WriteLine("sent player.");
+                        }
+                    }    
+
+                    SendAllPlayers(GameMessage.SendPacket(255, packet.username + " joined the game"));  
+                }
             } 
             catch
             {
@@ -183,6 +187,7 @@ namespace NetClassic
                     string message = packet.message;
 
                     SendAllPlayers(GameMessage.SendPacket(playerId, username+": "+ message));
+                    Console.WriteLine(username+" says: "+message);
                 }
             }
             catch
