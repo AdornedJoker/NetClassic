@@ -7,9 +7,7 @@ Not all features are supported yet:
 
 ~Classic support
 
-~Flooding
-
-~Physics
+~Physics + Flooding
 
 ~Commands
 
