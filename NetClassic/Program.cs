@@ -113,6 +113,8 @@ namespace NetClassic
                 {
                     Console.WriteLine(responseString);
                 }
+                Globals.world.Save(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)+ "\\serverLevel.cw");
+                Console.WriteLine("Saving world...");
 
                 onlinePlayers = 0;
             }
