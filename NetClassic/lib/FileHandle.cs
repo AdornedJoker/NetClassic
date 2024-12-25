@@ -19,8 +19,8 @@ namespace NetClassic
         public static void CreateServerFiles()
         {
             Console.WriteLine("Creating server files!");
-            var defaultValues = new string[6] {"verify-names=true", "port=25565", "max-players=16", 
-            "server-name=Minecraft Server", "public=true", "motd=Welcome to my Minecraft Server!"};
+            var defaultValues = new string[7] {"verify-names=true", "port=25565", "max-players=16", 
+            "server-name=Minecraft Server", "public=true", "motd=Welcome to my Minecraft Server!", "salt="+Globals.CreateSalt()};
             File.AppendAllLines(Globals.serverProperties, defaultValues);
         }
 

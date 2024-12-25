@@ -5,11 +5,27 @@ using System.Net.Sockets;
 using System.Net;
 using Newtonsoft.Json;
 using System.Reflection;
+using System.Text;
 
 namespace NetClassic
 {
     public class Globals
     {
+
+        private static Random RNG = new Random();
+
+        public static string CreateSalt()
+        {
+            string ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+            var builder = new StringBuilder();
+
+            while (builder.Length < 16) 
+            {
+                builder.Append(ALPHABET[RNG.Next(ALPHABET.Length)]);
+            }
+            return builder.ToString();
+        }
+
         public static List<Client> clients = new List<Client>();
 
         public static string serverProperties = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)+"\\server.properties";
@@ -25,8 +41,7 @@ namespace NetClassic
         public static string serverMotd = FileHandle.readValue(serverProperties, "motd");
 
         public static bool isOnline = Convert.ToBoolean(FileHandle.readValue(serverProperties, "public"));
-
-        public static string salt = "92B4w7t0kF9m8G5r"; //TODO: Make this random.
+        public static string salt = FileHandle.readValue(serverProperties, "salt");
 
         public static TcpListener server = new TcpListener(IPAddress.Any, 25565);
     }
@@ -53,8 +68,8 @@ namespace NetClassic
                 { "max", Globals.MaxPlayers.ToString() },
                 { "public", Globals.isOnline.ToString() },
                 { "salt", Globals.salt },
-                { "software", "&cNetClassic &av0.1" },
-                { "web", true.ToString() },
+                { "software", "&cNetClassic &av0.5" },
+                { "web", false.ToString() },
             };
 
             var content = new FormUrlEncodedContent(values);
@@ -86,8 +101,8 @@ namespace NetClassic
                     { "max", Globals.MaxPlayers.ToString() },
                     { "public", Globals.isOnline.ToString() },
                     { "salt", Globals.salt },
-                    { "software", "&cNetClassic &av0.1" },
-                    { "web", true.ToString() },
+                    { "software", "&cNetClassic &av0.5" },
+                    { "web", false.ToString() },
                 };
                 content = new FormUrlEncodedContent(values);
                 await client.PostAsync(heartbeatServer, content);
