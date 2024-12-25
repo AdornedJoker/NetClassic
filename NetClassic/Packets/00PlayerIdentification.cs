@@ -26,14 +26,14 @@ namespace NetClassic
             key = ReadWrite.ReadString(data.ToArray(), ReadWrite.GetPrevStringLength(username) + 2);
         }
 
-        public byte[] SendPacket(int protocolID)
+        public byte[] SendPacket(int protocolID, byte UserType)
         {
             MemoryStream ms = new MemoryStream();
             ms.WriteByte((byte)ClientPacketTypes.PlayerIdentification); //Packet ID
             ms.WriteByte((byte)protocolID); //Protocol
-            ms.Write(ReadWrite.WriteString("Tad's Classic Server")); //Server Name
-            ms.Write(ReadWrite.WriteString("We are back!")); //Server Motd
-            ms.WriteByte(0x64); // User Type
+            ms.Write(ReadWrite.WriteString(Globals.serverName)); //Server Name
+            ms.Write(ReadWrite.WriteString(Globals.serverMotd)); //Server Motd
+            ms.WriteByte(UserType); // User Type
             return ms.ToArray();
         }
     }

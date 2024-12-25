@@ -11,16 +11,22 @@ namespace NetClassic
     public class Globals
     {
         public static List<Client> clients = new List<Client>();
+
+        public static string serverProperties = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)+"\\server.properties";
         
         public static Classicworld world = new Classicworld(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)+ "\\serverLevel.cw");
 
-        public static int MaxPlayers = 16;
+        public static int MaxPlayers = Convert.ToInt32(FileHandle.readValue(serverProperties, "max-players"));
 
-        public static bool nameVerfication = true;
+        public static bool nameVerfication = Convert.ToBoolean(FileHandle.readValue(serverProperties, "verify-names"));
 
-        public static string salt = "92B4w7t0kF9m8G5r";
+        public static string serverName = FileHandle.readValue(serverProperties, "server-name");
 
-        public static bool isOnline = false;
+        public static string serverMotd = FileHandle.readValue(serverProperties, "motd");
+
+        public static bool isOnline = Convert.ToBoolean(FileHandle.readValue(serverProperties, "public"));
+
+        public static string salt = "92B4w7t0kF9m8G5r"; //TODO: Make this random.
 
         public static TcpListener server = new TcpListener(IPAddress.Any, 25565);
     }
@@ -41,7 +47,7 @@ namespace NetClassic
             int onlinePlayers = 0;
             var values = new Dictionary<string, string>
             {
-                { "name", "Tad's Classic Server" },
+                { "name", Globals.serverName },
                 { "port", "25565" },
                 { "users", "0" },
                 { "max", Globals.MaxPlayers.ToString() },
@@ -74,7 +80,7 @@ namespace NetClassic
 
                 values = new Dictionary<string, string>
                 {
-                    { "name", "Tad's Classic Server" },
+                    { "name", Globals.serverName },
                     { "port", "25565" },
                     { "users", onlinePlayers.ToString() },
                     { "max", Globals.MaxPlayers.ToString() },
@@ -133,7 +139,7 @@ namespace NetClassic
                     client.IpAddress = client.playerClient.Client.RemoteEndPoint.ToString();
                     client.username = "Player" + client.id;
 
-                    Console.WriteLine("Id: "+ i);
+                    Console.WriteLine(client.IpAddress+ " has connected!");
                 
                     client.Run();
                     break;

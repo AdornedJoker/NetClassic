@@ -14,6 +14,7 @@ namespace NetClassic
         private MemoryStream buffer = new MemoryStream();
         public NetworkStream? stream;
         public bool inGame = false;
+        public byte UserType = 0x64; //0x00 -> Not admin, 0x64 -> op
         public async Task Run()
         {
             while(playerClient != null && playerClient.Connected)
@@ -25,7 +26,7 @@ namespace NetClassic
                     stream = playerClient.GetStream();
                     if(bytesRead <= 0)
                     {
-                        Console.WriteLine("Player disconnected");
+                        //Console.WriteLine("Player disconnected");
                         Disconnect();
                         return;
                     }
@@ -41,7 +42,7 @@ namespace NetClassic
                 }
                 catch
                 {
-                    Console.WriteLine("Player disconnected");
+                    //Console.WriteLine("Player disconnected");
                     Disconnect();
                     return;
                 }
@@ -50,6 +51,7 @@ namespace NetClassic
 
         public void Disconnect()
         {
+            Console.WriteLine(username + " left the game");
             playerClient?.Close();
             playerClient = null;
             IpAddress = null;

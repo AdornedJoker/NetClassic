@@ -3,6 +3,7 @@ using System.Net.Sockets;
 using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.RegularExpressions;
 using SuperSimpleTcp;
 
 namespace NetClassic
@@ -79,9 +80,9 @@ namespace NetClassic
                 string? username = packet.username;
                 string? key = packet.key;
 
-                Console.WriteLine("Protocol ID: " + protocolID);
-                Console.WriteLine("Username: " + username);
-                Console.WriteLine("Key: " + key);
+                //Console.WriteLine("Protocol ID: " + protocolID);
+                //Console.WriteLine("Username: " + username);
+                //Console.WriteLine("Key: " + key);
 
                 foreach (var client in Globals.clients)
                 {
@@ -90,7 +91,7 @@ namespace NetClassic
                         client.username = username;
                         //client.id = id;
                         client.inGame = true;
-                        Console.WriteLine(client.id);
+                        Console.WriteLine(client.IpAddress + " is logging on as "+username+"!");
                         break;
                     }
                 }
@@ -101,7 +102,7 @@ namespace NetClassic
                     //Name verification.
                     if(key == CreateMD5(Globals.salt + username))
                     {
-                        Console.WriteLine("This person logged on to ClassiCube!");
+                        Console.WriteLine(username + " logged on to ClassiCube!");
                     } 
                     else 
                     {
@@ -113,7 +114,7 @@ namespace NetClassic
 
                 if (Globals.clients[id].playerClient != null)
                 {
-                    await stream.WriteAsync(packet.SendPacket(packet.protocolID));
+                    await stream.WriteAsync(packet.SendPacket(packet.protocolID, Globals.clients[id].UserType));
 
                     LevelInitialize packet2 = new LevelInitialize();
 
@@ -130,7 +131,7 @@ namespace NetClassic
                     SpawnPlayer spawnPlayer = new SpawnPlayer();
 
                     await stream.WriteAsync(spawnPlayer.SendPacket(-1, username));
-                    Console.WriteLine(id);
+                    //Console.WriteLine(id);
                     SendAllPlayersExcept(id, spawnPlayer.SendPacket((sbyte)id, username));
                     //Sending other players to you
                     foreach (var client in Globals.clients)
@@ -138,7 +139,7 @@ namespace NetClassic
                         if(client.id != id && client.playerClient != null)
                         {
                             await stream.WriteAsync(spawnPlayer.SendPacket((sbyte)client.id, client.username));
-                            Console.WriteLine("sent player.");
+                            //Console.WriteLine("sent player.");
                         }
                     }    
 
@@ -186,8 +187,60 @@ namespace NetClassic
                     byte playerId = (byte)id;
                     string message = packet.message;
 
-                    SendAllPlayers(GameMessage.SendPacket(playerId, username+": "+ message));
-                    Console.WriteLine(username+" says: "+message);
+                    bool isCommand = message.TrimStart().StartsWith("/");
+
+                    
+                    if(isCommand == false)
+                    {
+                        SendAllPlayers(GameMessage.SendPacket(playerId, username+": "+ message));
+                        Console.WriteLine(username+" says: "+message); 
+                    }
+                    else
+                    {
+                        if(Globals.clients[id].UserType == 0x64) //This user is operator.
+                        {
+                            string adminCommand = message.TrimStart().ToLower().Substring(1);
+                            if(Regex.IsMatch(adminCommand, @"\bop\b"))
+                            {
+                                Console.WriteLine(username+" admins: "+adminCommand);
+                                OpFunction handleOP = new OpFunction();
+                                await handleOP.HandleCommand(adminCommand, stream);
+                            }
+                            else if(Regex.IsMatch(adminCommand, @"\bdeop\b"))
+                            {
+                                Console.WriteLine(username+" admins: "+adminCommand);
+                                DeOpFunction handleDeOP = new DeOpFunction();
+                                await handleDeOP.HandleCommand(adminCommand, stream);
+                            }
+                            else if(Regex.IsMatch(adminCommand, @"\bkick\b"))
+                            {
+                                Console.WriteLine(username+" admins: "+adminCommand);
+                                KickFunction handleKick = new KickFunction();
+                                await handleKick.HandleCommand(adminCommand, stream);
+                            }
+                            else if(Regex.IsMatch(adminCommand, @"\bsay\b"))
+                            {
+                                Console.WriteLine(username+" admins: "+adminCommand);
+                                BroadcastFunction handleBroadCast = new BroadcastFunction();
+                                await handleBroadCast.HandleCommand(adminCommand, true);
+                            }
+                            else if(Regex.IsMatch(adminCommand, @"\bbroadcast\b"))
+                            {
+                                Console.WriteLine(username+" admins: "+adminCommand);
+                                BroadcastFunction handleBroadCast = new BroadcastFunction();
+                                await handleBroadCast.HandleCommand(adminCommand, false);
+                            }
+                            else
+                            {
+                                await stream.WriteAsync(GameMessage.SendPacket(255, "Unknown command!"));
+                            }
+                        }
+                        else
+                        {
+                            await stream.WriteAsync(GameMessage.SendPacket(255, "You're not a server admin!"));
+                        }
+                    }
+                    
                 }
             }
             catch
@@ -202,10 +255,101 @@ namespace NetClassic
             {
                 Ping(stream, id);
                 {
+                    Vector3 blockTwoLeft = new Vector3(0, 0, 0);
+                    Vector3 blockTwoRight = new Vector3(0, 0, 0);
+                    Vector3 blockTwoForward = new Vector3(0, 0, 0);
+                    Vector3 blockTwoBackward = new Vector3(0, 0, 0);
+                    Vector3 blockTwoTop = new Vector3(0, 0, 0);
+                    Vector3 blockTwoBottom = new Vector3(0, 0, 0);
+
+                    
                     Block packet = new();
+                    Physics physics = new();
                     packet.ReadPacket(networkPacket);
 
                     SendAllPlayers(packet.SendPacket(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode));
+
+                    if(packet.BlockType == 19 && packet.Mode == 0x01) //If it's a sponge
+                    {
+                        physics.CreateBoundingBox(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
+                    }
+
+                    if(packet.BlockType == 8 || packet.BlockType == 10) //If it's water, check flood
+                    {
+                       physics.Flood(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
+                    }
+
+                    bool isLeft = Physics.isBlock((short)(packet.X - 1), packet.Y, packet.Z);
+                    bool isRight = Physics.isBlock((short)(packet.X + 1), packet.Y, packet.Z);
+                    bool isForward = Physics.isBlock(packet.X, packet.Y, (short)(packet.Z + 1));
+                    bool isBackward = Physics.isBlock(packet.X, packet.Y, (short)(packet.Z - 1));
+                    bool isTop = Physics.isBlock(packet.X, (short)(packet.Y + 1), packet.Z);
+                    bool isBottom = Physics.isBlock(packet.X, (short)(packet.Y - 1), packet.Z);
+
+                    if(isLeft)
+                    {
+                        blockTwoLeft = new Vector3((short)(packet.X - 1), packet.Y, packet.Z);
+                    }
+
+                    if(isRight)
+                    {
+                        blockTwoRight = new Vector3((short)(packet.X + 1), packet.Y, packet.Z);
+                    }
+
+                     if(isForward)
+                    {
+                        blockTwoForward = new Vector3(packet.X, packet.Y, (short)(packet.Z + 1));
+                    }
+
+                    if(isBackward)
+                    {
+    
+                        blockTwoBackward = new Vector3(packet.X, packet.Y, (short)(packet.Z - 1));
+                    }
+
+                    if(isTop)
+                    {
+                        blockTwoTop = new Vector3(packet.X, (short)(packet.Y + 1), packet.Z);
+                    }
+
+                    if(isBottom)
+                    {
+                        blockTwoBottom = new Vector3(packet.X, (short)(packet.Y - 1), packet.Z);
+                    }
+
+                    await physics.CompareTwoBlocks(new Vector3(packet.X, packet.Y, packet.Z), blockTwoLeft,
+                    blockTwoRight, blockTwoForward, blockTwoBackward, blockTwoTop, blockTwoBottom);
+
+                    //Sand/Gravel Physics
+                    if(Globals.world.BlockData[(packet.Y * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 12
+                    || Globals.world.BlockData[(packet.Y * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 13)
+                    {
+                        short newY = physics.BlockFall(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
+                        SendAllPlayers(packet.SendPacket(packet.X, newY, packet.Z, packet.BlockType, packet.Mode));
+                    }
+
+                    if(Globals.world.BlockData[((packet.Y-1) * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 2)
+                    {
+                        physics.BlockChange(new Vector3(packet.X, packet.Y-1, packet.Z), 3, false);
+                    }
+
+                    if(Globals.world.BlockData[(packet.Y * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 3)
+                    {
+                        physics.BlockChange(new Vector3(packet.X, packet.Y, packet.Z), 3, true);
+                    }
+
+                    int checkBlockBelow = physics.CheckBlockCoveredInt(new Vector3(packet.X, packet.Y, packet.Z));
+
+                    if(Globals.world.BlockData[(checkBlockBelow * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 2)
+                    {
+                        physics.BlockChange(new Vector3(packet.X, checkBlockBelow, packet.Z), 3, false);
+                    }
+
+                    if(packet.Mode == 0x00)
+                    {
+                        physics.MultipleBlockFall(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
+                    }
+
                 }
             }
             catch
