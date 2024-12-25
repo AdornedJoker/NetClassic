@@ -9,8 +9,6 @@ Not all features are supported yet:
 
 ~Classic support
 
-~Physics + Flooding
-
-~Commands
+~Commands (75%)
 
 ~GUI
