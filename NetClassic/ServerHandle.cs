@@ -19,7 +19,6 @@ namespace NetClassic
                     try
                     {
                         await client.playerClient.SendAsync(data);
-                        //await Task.Delay(5); // Small delay between clients
                     }
                     catch (Exception e)
                     {
@@ -39,7 +38,6 @@ namespace NetClassic
                     try
                     {
                         await client.playerClient.SendAsync(data);
-                        //await Task.Delay(5); // Small delay between clients
                     }
                     catch (Exception e)
                     {

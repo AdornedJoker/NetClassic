@@ -8,7 +8,7 @@ namespace NetClassic
     {
         public static string ReadString(byte[] array, int index)
         {
-            return Encoding.UTF8.GetString(array.ToArray(), index, 64).TrimEnd();
+            return Encoding.ASCII.GetString(array.ToArray(), index, 64).TrimEnd();
         }
 
         public static int GetPrevStringLength(string data)
@@ -29,7 +29,7 @@ namespace NetClassic
 
         public static byte[] WriteString(string Message)
         {
-            byte[] message = Encoding.UTF8.GetBytes(Message);
+            byte[] message = Encoding.ASCII.GetBytes(Message);
 
             MemoryStream memoryStream = new MemoryStream();
             memoryStream.Write(message);
