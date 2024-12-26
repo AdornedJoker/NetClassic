@@ -95,7 +95,7 @@ namespace NetClassic
                 { "max", Globals.MaxPlayers.ToString() },
                 { "public", Globals.isOnline.ToString() },
                 { "salt", Globals.salt },
-                { "software", "&cNetClassic &av0.5.2" },
+                { "software", "&cNetClassic &av0.5.3" },
                 { "web", false.ToString() },
             };
 
@@ -128,7 +128,7 @@ namespace NetClassic
                     { "max", Globals.MaxPlayers.ToString() },
                     { "public", Globals.isOnline.ToString() },
                     { "salt", Globals.salt },
-                    { "software", "&cNetClassic &av0.5.2" },
+                    { "software", "&cNetClassic &av0.5.3" },
                     { "web", false.ToString() },
                 };
                 content = new FormUrlEncodedContent(values);

@@ -12,47 +12,51 @@ namespace NetClassic
     {
         public static async Task SendAllPlayers(byte[] data)
         {
+            var tasks = new List<Task>();
 
-            foreach (var client in Globals.clients)
+            for (int i = 0; i < Globals.clients.Count; i++)
             {
-                if (client.playerClient != null)
-                {
+                var client = Globals.clients[i];
+                if (client.playerClient != null && client.playerClient.Connected)
+                {  
                     try
                     {
-                        await Ping(client.playerClient);
-                        {
-                            await client.playerClient.SendAsync(data);
-                        }
+                        tasks.Add(client.playerClient.SendAsync(data)); 
                     }
-                    catch
+                    catch (Exception e)
                     {
-                        Console.WriteLine("target in  #1");
-                        continue;
+                        Console.WriteLine($"Failed to send to client {client.id}: {e.Message}");
+                        await client.Disconnect();
                     }
                 }
             }
+
+            await Task.WhenAll(tasks);
         }
 
         public static async Task SendAllPlayersExcept(int id, byte[] data)
         {
+            var tasks = new List<Task>();
+            
             for (int i = 0; i < Globals.clients.Count; i++)
             {
                 var client = Globals.clients[i];
-                if (client.id != id && client.playerClient != null)
+                if (client.id != id && client.playerClient != null && client.playerClient.Connected)
                 {       
                     try
                     {
-                        await Ping(client.playerClient);
-                        {
-                            await client.playerClient.SendAsync(data);
-                        }
+                        tasks.Add(client.playerClient.SendAsync(data)); 
                     }
-                    catch
+                    catch (Exception e)
                     {
-                        Console.WriteLine("target in sight #2");
+                        Console.WriteLine($"Failed to send to client {client.id}: {e.Message}");
+                        await client.Disconnect();
                     }
                 }
             }
+
+            // Wait for all sends to complete
+            await Task.WhenAll(tasks);
         }
 
         public static async Task Ping(Socket stream)
