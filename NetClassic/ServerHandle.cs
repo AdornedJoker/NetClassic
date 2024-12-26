@@ -12,16 +12,14 @@ namespace NetClassic
     {
         public static async Task SendAllPlayers(byte[] data)
         {
-            var tasks = new List<Task>();
-
-            for (int i = 0; i < Globals.clients.Count; i++)
+            foreach (var client in Globals.clients)
             {
-                var client = Globals.clients[i];
                 if (client.playerClient != null && client.playerClient.Connected)
-                {  
+                {
                     try
                     {
-                        tasks.Add(client.playerClient.SendAsync(data)); 
+                        await client.playerClient.SendAsync(data);
+                        await Task.Delay(5); // Small delay between clients
                     }
                     catch (Exception e)
                     {
@@ -30,22 +28,18 @@ namespace NetClassic
                     }
                 }
             }
-
-            await Task.WhenAll(tasks);
         }
 
         public static async Task SendAllPlayersExcept(int id, byte[] data)
         {
-            var tasks = new List<Task>();
-            
-            for (int i = 0; i < Globals.clients.Count; i++)
+            foreach (var client in Globals.clients)
             {
-                var client = Globals.clients[i];
                 if (client.id != id && client.playerClient != null && client.playerClient.Connected)
-                {       
+                {
                     try
                     {
-                        tasks.Add(client.playerClient.SendAsync(data)); 
+                        await client.playerClient.SendAsync(data);
+                        await Task.Delay(5); // Small delay between clients
                     }
                     catch (Exception e)
                     {
@@ -54,9 +48,6 @@ namespace NetClassic
                     }
                 }
             }
-
-            // Wait for all sends to complete
-            await Task.WhenAll(tasks);
         }
 
         public static async Task Ping(Socket stream)
