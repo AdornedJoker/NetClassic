@@ -5,7 +5,7 @@ namespace NetClassic
 {
     public class OpFunction : Commands
     {
-        public async Task HandleCommand(string adminCommand, NetworkStream stream)
+        public async Task HandleCommand(string adminCommand, Socket stream)
         {
             string getName = adminCommand.Substring(2).TrimStart();
             int userID = 0;
@@ -22,17 +22,17 @@ namespace NetClassic
                     }
                 }
 
-                NetworkStream otherUserStream = Globals.clients[userID].stream;
+                Socket otherUserStream = Globals.clients[userID].playerClient;
 
                 UpdateUserType packet = new UpdateUserType();
 
-                await otherUserStream.WriteAsync(packet.SendPacket(0x64));
-                await otherUserStream.WriteAsync(GameMessage.SendPacket(255, "You're now op!"));
+                await otherUserStream.SendAsync(packet.SendPacket(0x64));
+                await otherUserStream.SendAsync(GameMessage.SendPacket(255, "You're now op!"));
                 Globals.clients[userID].UserType = 0x64;
             }
             else
             {
-                await stream.WriteAsync(GameMessage.SendPacket(255, "Unknown command!"));
+                await stream.SendAsync(GameMessage.SendPacket(255, "Unknown command!"));
             }
         }
     }

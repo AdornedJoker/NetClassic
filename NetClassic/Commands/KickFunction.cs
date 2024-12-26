@@ -5,7 +5,7 @@ namespace NetClassic
 {
     public class KickFunction : Commands
     {
-        public async Task HandleCommand(string adminCommand, NetworkStream stream)
+        public async Task HandleCommand(string adminCommand, Socket stream)
         {
             string getName = adminCommand.Substring(4).TrimStart();
             int userID = 0;
@@ -22,15 +22,15 @@ namespace NetClassic
                     }
                 }
 
-                NetworkStream otherUserStream = Globals.clients[userID].stream;
+                Socket otherUserPlayer = Globals.clients[userID].playerClient;
 
                 DisconnectPlayer disconnectPacket = new DisconnectPlayer();
-                await otherUserStream.WriteAsync(disconnectPacket.SendPacket("You were kicked"));
-                Globals.clients[userID].Disconnect();
+                await otherUserPlayer.SendAsync(disconnectPacket.SendPacket("You were kicked"));
+                _ = Globals.clients[userID].Disconnect();
             }
             else
             {
-                await stream.WriteAsync(GameMessage.SendPacket(255, "Unknown command!"));
+                await stream.SendAsync(GameMessage.SendPacket(255, "Unknown command!"));
             }
         }
     }

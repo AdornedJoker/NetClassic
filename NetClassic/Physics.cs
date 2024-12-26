@@ -19,15 +19,15 @@ namespace NetClassic
 
     public class Physics
     {
-        Block packet = new Block();
-        List<Task> TaskList = new List<Task>();
+        public static Block packet = new Block();
+        public static List<Task> TaskList = new List<Task>();
 
-        public short BlockFall(short X, short Y, short Z, byte BlockType, byte Mode)
+        public static async Task<short> BlockFall(short X, short Y, short Z, byte BlockType, byte Mode)
         {
             short sucessY = Y;
             if(BlockType == 12 || BlockType == 13) //Sand or Gravel
             {
-                ServerHandle.SendAllPlayers(packet.SendPacket(X, Y, Z, 0x00, Mode));
+                await ServerHandle.SendAllPlayers(packet.SendPacket(X, Y, Z, 0x00, Mode));
                 while(Globals.world.BlockData[(sucessY * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 0 
                 || Globals.world.BlockData[(sucessY * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 8
                 || Globals.world.BlockData[(sucessY * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 9)
@@ -39,7 +39,7 @@ namespace NetClassic
             return sucessY;
         }
 
-        public void MultipleBlockFall(short X, short Y, short Z, byte BlockType, byte Mode)
+        public static async Task MultipleBlockFall(short X, short Y, short Z, byte BlockType, byte Mode)
         {
             for (int i = Y + 1; i < Globals.world.SizeY; i++)
             {
@@ -91,15 +91,15 @@ namespace NetClassic
                     {
                         blockTwoBottom = new Vector3(X, (short)(tempY - 1), Z);
                     }
-                    ServerHandle.SendAllPlayers(packet.SendPacket(X, (short)(i - 1), Z, blockTypeTwoTop, 0x00));
-                    CompareTwoBlocks(new Vector3(X, tempY, Z), blockTwoLeft,
+                    await ServerHandle.SendAllPlayers(packet.SendPacket(X, (short)(i - 1), Z, blockTypeTwoTop, 0x00));
+                    await CompareTwoBlocks(new Vector3(X, tempY, Z), blockTwoLeft,
                     blockTwoRight, blockTwoForward, blockTwoBackward, blockTwoTop, blockTwoBottom);
                 }
 
                 if(blockTypeTwoTop == 12 || blockTypeTwoTop == 13)
                 {
                     //Console.WriteLine(blockTypeTwoTop);
-                    ServerHandle.SendAllPlayers(packet.SendPacket(X, (short)(i - 1), Z, blockTypeTwoTop, 0x01));
+                    await ServerHandle.SendAllPlayers(packet.SendPacket(X, (short)(i - 1), Z, blockTypeTwoTop, 0x01));
                 }
                 else
                 {
@@ -108,7 +108,7 @@ namespace NetClassic
             }
         }
 
-        public void CreateBoundingBox(short X, short Y, short Z, byte BlockType, byte Mode)
+        public static async Task CreateBoundingBox(short X, short Y, short Z, byte BlockType, byte Mode)
         {
             if(BlockType == 19) //If it's a sponge
             {
@@ -121,7 +121,7 @@ namespace NetClassic
                             if (Globals.world.BlockData[(tempY * Globals.world.SizeZ + tempZ) * Globals.world.SizeX + tempX] == 8 
                             || Globals.world.BlockData[(tempY * Globals.world.SizeZ + tempZ) * Globals.world.SizeX + tempX] == 9)
                             {
-                                ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, 0x00, Mode));
+                                await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, 0x00, Mode));
                             }
                         }
                     }
@@ -129,7 +129,7 @@ namespace NetClassic
             }
         }
 
-        public async Task CompareTwoBlocks(Vector3 BlockOne, Vector3 blockTwoLeft,
+        public static async Task CompareTwoBlocks(Vector3 BlockOne, Vector3 blockTwoLeft,
         Vector3 blockTwoRight, Vector3 blockTwoForward, Vector3 blockTwoBackwards, Vector3 blockTwoTop, Vector3 blockTwoBottom)
         {
             byte blockTypeTwoLeft = Globals.world.BlockData[(BlockOne.Y * Globals.world.SizeZ + BlockOne.Z) * Globals.world.SizeX + (BlockOne.X - 1)];
@@ -151,7 +151,7 @@ namespace NetClassic
             || blockTypeTwoLeft == 10 && !blockTwoLeft.Equals(new Vector3(0, 0, 0)) 
             || blockTypeTwoLeft == 11 && !blockTwoLeft.Equals(new Vector3(0, 0, 0)))
             {
-                Flood((short)blockTwoLeft.X, (short)blockTwoLeft.Y, (short)blockTwoLeft.Z, blockTypeTwoLeft, 0x01);
+                Task.Run(() => Flood((short)blockTwoLeft.X, (short)blockTwoLeft.Y, (short)blockTwoLeft.Z, blockTypeTwoLeft, 0x01));
             }
 
             if(blockTypeTwoRight == 8 && !blockTwoRight.Equals(new Vector3(0, 0, 0)) 
@@ -160,7 +160,7 @@ namespace NetClassic
             || blockTypeTwoRight == 11 && !blockTwoRight.Equals(new Vector3(0, 0, 0)))
             {
                 //Console.WriteLine(blockTypeTwoLeft);
-                Flood((short)blockTwoRight.X, (short)blockTwoRight.Y, (short)blockTwoRight.Z, blockTypeTwoRight, 0x01);
+                Task.Run(() => Flood((short)blockTwoRight.X, (short)blockTwoRight.Y, (short)blockTwoRight.Z, blockTypeTwoRight, 0x01));
             }
             if(blockTypeTwoForward == 8 && !blockTwoForward.Equals(new Vector3(0, 0, 0)) 
             || blockTypeTwoForward == 9 && !blockTwoForward.Equals(new Vector3(0, 0, 0))
@@ -168,7 +168,7 @@ namespace NetClassic
             || blockTypeTwoForward == 11 && !blockTwoForward.Equals(new Vector3(0, 0, 0)))
             {
                 //Console.WriteLine(blockTypeTwoLeft);
-                Flood((short)blockTwoForward.X, (short)blockTwoForward.Y, (short)blockTwoForward.Z, blockTypeTwoForward, 0x01);
+                Task.Run(() => Flood((short)blockTwoForward.X, (short)blockTwoForward.Y, (short)blockTwoForward.Z, blockTypeTwoForward, 0x01));
             }
             if(blockTypeTwoBackward == 8 && !blockTwoBackwards.Equals(new Vector3(0, 0, 0)) 
             || blockTypeTwoBackward == 9 && !blockTwoBackwards.Equals(new Vector3(0, 0, 0))
@@ -176,7 +176,7 @@ namespace NetClassic
             || blockTypeTwoBackward == 11 && !blockTwoBackwards.Equals(new Vector3(0, 0, 0)))
             {
                 //Console.WriteLine(blockTypeTwoLeft);
-                Flood((short)blockTwoBackwards.X, (short)blockTwoBackwards.Y, (short)blockTwoBackwards.Z, blockTypeTwoBackward, 0x01);
+                Task.Run(() => Flood((short)blockTwoBackwards.X, (short)blockTwoBackwards.Y, (short)blockTwoBackwards.Z, blockTypeTwoBackward, 0x01));
             }
             if(blockTypeTwoTop == 8 && !blockTwoTop.Equals(new Vector3(0, 0, 0)) 
             || blockTypeTwoTop == 9 && !blockTwoTop.Equals(new Vector3(0, 0, 0))
@@ -184,7 +184,7 @@ namespace NetClassic
             || blockTypeTwoTop == 11 && !blockTwoTop.Equals(new Vector3(0, 0, 0)))
             {
                 //Console.WriteLine(blockTypeTwoLeft);
-                Flood((short)blockTwoTop.X, (short)blockTwoTop.Y, (short)blockTwoTop.Z, blockTypeTwoTop, 0x01);
+                Task.Run(() => Flood((short)blockTwoTop.X, (short)blockTwoTop.Y, (short)blockTwoTop.Z, blockTypeTwoTop, 0x01));
             }
             if(blockTypeTwoBottom == 8 && !blockTwoBottom.Equals(new Vector3(0, 0, 0)) 
             || blockTypeTwoBottom == 9 && !blockTwoBottom.Equals(new Vector3(0, 0, 0))
@@ -192,12 +192,12 @@ namespace NetClassic
             || blockTypeTwoBottom == 11 && !blockTwoBottom.Equals(new Vector3(0, 0, 0)))
             {
                 //Console.WriteLine(blockTypeTwoLeft);
-                Flood((short)blockTwoBottom.X, (short)blockTwoBottom.Y, (short)blockTwoBottom.Z, blockTypeTwoBottom, 0x01);
+                Task.Run(() => Flood((short)blockTwoBottom.X, (short)blockTwoBottom.Y, (short)blockTwoBottom.Z, blockTypeTwoBottom, 0x01));
             }
 
         }
 
-        public async Task BlockChange(Vector3 BlockTwo, byte newBlockID, bool loopNow)
+        public static async Task BlockChange(Vector3 BlockTwo, byte newBlockID, bool loopNow)
         {
             Random milliSeconds = new Random();
             Vector3 blockTwoTop = new Vector3(BlockTwo.X, (short)(BlockTwo.Y + 1), BlockTwo.Z);
@@ -209,7 +209,7 @@ namespace NetClassic
 
             if(CheckBlockCovered(BlockTwo))
             {
-                ServerHandle.SendAllPlayers(packet.SendPacket((short)BlockTwo.X, (short)BlockTwo.Y, (short)BlockTwo.Z, newBlockID, 0x01));  
+                await ServerHandle.SendAllPlayers(packet.SendPacket((short)BlockTwo.X, (short)BlockTwo.Y, (short)BlockTwo.Z, newBlockID, 0x01));  
            
                 while(true)
                 {
@@ -242,7 +242,7 @@ namespace NetClassic
 
         }
 
-        public bool CheckBlockCovered(Vector3 BlockOne)
+        public static bool CheckBlockCovered(Vector3 BlockOne)
         {
             for (int i = BlockOne.Y + 1; i < Globals.world.SizeY; i++)
             {
@@ -273,7 +273,7 @@ namespace NetClassic
             return false;
         }
 
-        public int CheckBlockCoveredInt(Vector3 BlockOne)
+        public static int CheckBlockCoveredInt(Vector3 BlockOne)
         {
             int failSafe = 0;
             for (int i = BlockOne.Y - 1; i > 0; i--)
@@ -306,7 +306,7 @@ namespace NetClassic
             return failSafe;
         }
 
-        public async Task ChangeDirt2Grass(Vector3 BlockTwo)
+        public static async Task ChangeDirt2Grass(Vector3 BlockTwo)
         {
             Random milliSeconds = new Random();
 
@@ -314,18 +314,18 @@ namespace NetClassic
 
             if(!CheckBlockCovered(BlockTwo) && Globals.world.BlockData[(BlockTwo.Y * Globals.world.SizeZ + BlockTwo.Z) * Globals.world.SizeX + BlockTwo.X] != 0)
             {
-                ServerHandle.SendAllPlayers(packet.SendPacket((short)BlockTwo.X, (short)BlockTwo.Y, (short)BlockTwo.Z, 2, 0x01));
+                await ServerHandle.SendAllPlayers(packet.SendPacket((short)BlockTwo.X, (short)BlockTwo.Y, (short)BlockTwo.Z, 2, 0x01));
             }
             else
             {
                 if(Globals.world.BlockData[(BlockTwo.Y * Globals.world.SizeZ + BlockTwo.Z) * Globals.world.SizeX + BlockTwo.X] != 0)
                 {
-                    BlockChange(new Vector3(BlockTwo.X, BlockTwo.Y, BlockTwo.Z), 3, false);
+                    await BlockChange(new Vector3(BlockTwo.X, BlockTwo.Y, BlockTwo.Z), 3, false);
                 }
             }
         }
 
-        public bool isAir(short X, short Y, short Z, bool isLava)
+        public static async Task<bool> isAir(short X, short Y, short Z, bool isLava)
         {
             if (Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 0 && 
             Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] != 8
@@ -343,7 +343,7 @@ namespace NetClassic
             || Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 11
             && isLava == false)
             {
-                ServerHandle.SendAllPlayers(packet.SendPacket(X, Y, Z, 1, 0x01));
+                await ServerHandle.SendAllPlayers(packet.SendPacket(X, Y, Z, 1, 0x01));
                 return false;
             }
 
@@ -351,7 +351,7 @@ namespace NetClassic
             || Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 9
             && isLava == true)
             {
-                ServerHandle.SendAllPlayers(packet.SendPacket(X, Y, Z, 1, 0x01));
+                await ServerHandle.SendAllPlayers(packet.SendPacket(X, Y, Z, 1, 0x01));
                 return false;
             }
 
@@ -371,7 +371,7 @@ namespace NetClassic
 
         //Information: Flood methods should be removed from the list. Not sure how to do that though. Will be resolved later down
         // -the line.
-        public async Task Flood(short X, short Y, short Z, byte BlockType, byte Mode)
+        public static async Task Flood(short X, short Y, short Z, byte BlockType, byte Mode)
         {
            if (Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 8 
             || Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 9
@@ -407,11 +407,12 @@ namespace NetClassic
                 while(continueFlood)
                 {
                     await Task.Delay(milliSeconds);
-                    bool isLeft = isAir((short)(tempX - 1), tempY, tempZ, isLava);
-                    bool isRight = isAir((short)(tempX + 1), tempY, tempZ, isLava);
-                    bool isForward = isAir(tempX, tempY, (short)(tempZ + 1), isLava);
-                    bool isBackward = isAir(tempX, tempY, (short)(tempZ - 1), isLava);
-                    bool isBottom = isAir(tempX, (short)(tempY - 1), tempZ, isLava);
+                    bool isLeft =  await isAir((short)(tempX - 1), tempY, tempZ, isLava);
+                    bool isRight =  await isAir((short)(tempX + 1), tempY, tempZ, isLava);
+                    bool isForward =  await isAir(tempX, tempY, (short)(tempZ + 1), isLava);
+                    bool isBackward =  await isAir(tempX, tempY, (short)(tempZ - 1), isLava);
+                    bool isBottom =  await isAir(tempX, (short)(tempY - 1), tempZ, isLava);
+                    
                     Vector3 blockTwoBottom = new Vector3(tempX, (short)(tempY - 1), tempZ);
 
                     if(!isLeft && !isRight && !isForward && !isBackward && !isBottom)
@@ -422,34 +423,42 @@ namespace NetClassic
 
 
                     //REDO CHECK OF MAP BORDER AGAIN LATER
-                    if(tempX > Globals.world.SizeX 
-                    || tempY > Globals.world.SizeY
-                    || tempZ > Globals.world.SizeZ
-                    || tempX < 0 
-                    || tempY < 0
-                    || tempZ < 0)
+                    if(tempX > Globals.world.SizeX)
                     {
                         //Console.WriteLine("Stopping Flood due to reached map border.");
                         break;
                     }
-
-                    if(isLeft){tempX = (short)(tempX - 1); ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempX = X;}
-                    if(isRight){tempX = (short)(tempX + 1); ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempX = X;}
-                    if(isForward){tempZ = (short)(tempZ + 1); ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempZ = Z;}
-                    if(isBackward){tempZ = (short)(tempZ - 1); ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempZ = Z;}
-                    if(isBottom){tempY = (short)(tempY - 1); ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempY = Y;}
-
-                    byte blockTypeTwoBottom = Globals.world.BlockData[(blockTwoBottom.Y * Globals.world.SizeZ + blockTwoBottom.Z) * Globals.world.SizeX + blockTwoBottom.X];
-                    if(blockTypeTwoBottom == 2)
+                    else if(tempY >= Globals.world.SizeY)
                     {
-                        var LastTask = BlockChange(blockTwoBottom, 3, false); 
-                        TaskList.Add(LastTask);
-                        //Console.WriteLine("grass foudn!!!!");
+                        break;
                     }
-                    for (int i = 0; i < TaskList.Count; i++)
+                    else if( tempZ >= Globals.world.SizeZ)
                     {
-                        TaskList[i].Start();
+                        break;
                     }
+                    else if (tempX <= 0)
+                    {
+                        break;
+                    }
+                    else if (tempY <= 0)
+                    {
+                        break;
+                    }
+                    else if (tempZ <= 0)
+                    {
+                        break;
+                    }
+                    else if (tempZ <= 0 && tempX <= 0 || tempZ >= Globals.world.SizeZ && tempX >= Globals.world.SizeX)
+                    {
+                        break;
+                    }
+
+                    if(isLeft){tempX = (short)(tempX - 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempX = X;}
+                    if(isRight){tempX = (short)(tempX + 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempX = X;}
+                    if(isForward){tempZ = (short)(tempZ + 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempZ = Z;}
+                    if(isBackward){tempZ = (short)(tempZ - 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempZ = Z;}
+                    if(isBottom){tempY = (short)(tempY - 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempY = Y;}
+                    
                 }
             }
         }    

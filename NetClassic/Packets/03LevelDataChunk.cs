@@ -10,7 +10,7 @@ namespace NetClassic
 {
     public class LevelDataChunk : Packets
     {
-        public async Task SendPacket(NetworkStream stream)
+        public async Task SendPacket(Socket stream)
         {
             byte[] compressedData;
             using (MemoryStream compressedStream = new MemoryStream())
@@ -45,7 +45,7 @@ namespace NetClassic
 
                     packet.WriteByte((byte)Math.Ceiling((double)i * 100 / compressedData.Length));
                     
-                    await stream.WriteAsync(packet.ToArray());
+                    await stream.SendAsync(packet.ToArray());
                 }
             }
         }

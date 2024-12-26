@@ -68,7 +68,7 @@ namespace NetClassic
                 { "max", Globals.MaxPlayers.ToString() },
                 { "public", Globals.isOnline.ToString() },
                 { "salt", Globals.salt },
-                { "software", "&cNetClassic &av0.5" },
+                { "software", "&cNetClassic &av0.5.1" },
                 { "web", false.ToString() },
             };
 
@@ -101,7 +101,7 @@ namespace NetClassic
                     { "max", Globals.MaxPlayers.ToString() },
                     { "public", Globals.isOnline.ToString() },
                     { "salt", Globals.salt },
-                    { "software", "&cNetClassic &av0.5" },
+                    { "software", "&cNetClassic &av0.5.1" },
                     { "web", false.ToString() },
                 };
                 content = new FormUrlEncodedContent(values);
@@ -139,12 +139,12 @@ namespace NetClassic
             while(true)
             {
                 var client = await Globals.server.AcceptTcpClientAsync();
-                AddPlayer(client);
+                AddPlayer(client.Client);
                 Thread.Sleep(1000);
             }
         }
 
-        static async void AddPlayer(TcpClient tcpClient)
+        static async void AddPlayer(Socket tcpClient)
         {
             for(int i = 0; i < Globals.MaxPlayers; i++)
             {
@@ -153,12 +153,19 @@ namespace NetClassic
                 {
                     client.playerClient = tcpClient;
                     client.id = i;
-                    client.IpAddress = client.playerClient.Client.RemoteEndPoint.ToString();
+                    if (client.playerClient.RemoteEndPoint != null)
+                    {
+                        client.IpAddress = client.playerClient.RemoteEndPoint.ToString();
+                    }
+                    else
+                    {
+                        client.IpAddress = "Unknown";
+                    }
                     client.username = "Player" + client.id;
 
                     Console.WriteLine(client.IpAddress+ " has connected!");
                 
-                    client.Run();
+                    await client.Run();
                     break;
                 }
             }

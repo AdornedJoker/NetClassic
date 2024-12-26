@@ -10,16 +10,16 @@ namespace NetClassic
 {
     public class ServerHandle
     {
-        public static void SendAllPlayers(byte[] data)
+        public static async Task SendAllPlayers(byte[] data)
         {
 
             foreach (var client in Globals.clients)
             {
-                if (client.stream != null && client.playerClient != null)
+                if (client.playerClient != null)
                 {
                     try
                     {
-                        client.stream.WriteAsync(data);
+                        await client.playerClient.SendAsync(data);
                     }
                     catch
                     {
@@ -30,16 +30,16 @@ namespace NetClassic
             }
         }
 
-        public static void SendAllPlayersExcept(int id, byte[] data)
+        public static async Task SendAllPlayersExcept(int id, byte[] data)
         {
             for (int i = 0; i < Globals.clients.Count; i++)
             {
                 var client = Globals.clients[i];
-                if (client.id != id && client.stream != null && client.playerClient != null)
+                if (client.id != id && client.playerClient != null)
                 {       
                     try
                     {
-                        client.stream.WriteAsync(data);
+                         await client.playerClient.SendAsync(data);
                     }
                     catch
                     {
@@ -49,11 +49,11 @@ namespace NetClassic
             }
         }
 
-        public static void Ping(Stream stream, int id)
+        public static async Task Ping(Socket stream, int id)
         {
             try
             {
-                stream.WriteByte((byte)ServerPacketTypes.Ping);
+                await Task.Run(() => stream.SendAsync(new ArraySegment<byte>(new byte[] { (byte)ServerPacketTypes.Ping })));
             }
             catch (Exception e)
             {
@@ -69,7 +69,7 @@ namespace NetClassic
             return Convert.ToHexStringLower(hashBytes);
         }
 
-        public static async Task PlayerIdentification(byte[] networkPacket, NetworkStream stream, int id)
+        public static async Task PlayerIdentification(byte[] networkPacket, Socket stream, int id)
         {
             try
             {
@@ -107,18 +107,18 @@ namespace NetClassic
                     else 
                     {
                         DisconnectPlayer disconnectPacket = new DisconnectPlayer();
-                        await stream.WriteAsync(disconnectPacket.SendPacket("Illegal name"));
-                        Globals.clients[id].Disconnect();
+                        await stream.SendAsync(disconnectPacket.SendPacket("Illegal name"));
+                        _ = Globals.clients[id].Disconnect();
                     }
                 }
 
                 if (Globals.clients[id].playerClient != null)
                 {
-                    await stream.WriteAsync(packet.SendPacket(packet.protocolID, Globals.clients[id].UserType));
+                    await stream.SendAsync(packet.SendPacket(packet.protocolID, Globals.clients[id].UserType));
 
                     LevelInitialize packet2 = new LevelInitialize();
 
-                    await stream.WriteAsync(packet2.SendPacket());
+                    await stream.SendAsync(packet2.SendPacket());
 
                     LevelDataChunk levelDataChunk = new LevelDataChunk();
 
@@ -126,60 +126,69 @@ namespace NetClassic
 
                     LevelFinalize levelFinalize = new LevelFinalize();
 
-                    await stream.WriteAsync(levelFinalize.SendPacket());
+                    await stream.SendAsync(levelFinalize.SendPacket());
 
                     SpawnPlayer spawnPlayer = new SpawnPlayer();
 
-                    await stream.WriteAsync(spawnPlayer.SendPacket(-1, username));
+                    if (username != null)
+                    {
+                        await stream.SendAsync(spawnPlayer.SendPacket(-1, username));
+                    }
                     //Console.WriteLine(id);
-                    SendAllPlayersExcept(id, spawnPlayer.SendPacket((sbyte)id, username));
+                    if (username != null)
+                    {
+                        await SendAllPlayersExcept(id, spawnPlayer.SendPacket((sbyte)id, username));
+                    }
                     //Sending other players to you
                     foreach (var client in Globals.clients)
                     {
                         if(client.id != id && client.playerClient != null)
                         {
-                            await stream.WriteAsync(spawnPlayer.SendPacket((sbyte)client.id, client.username));
+                            if (client.username != null)
+                            {
+                                await stream.SendAsync(spawnPlayer.SendPacket((sbyte)client.id, client.username));
+                            }
                             //Console.WriteLine("sent player.");
                         }
                     }    
 
-                    SendAllPlayers(GameMessage.SendPacket(255, packet.username + " joined the game"));  
+                    await SendAllPlayers(GameMessage.SendPacket(255, packet.username + " joined the game"));  
                 }
             } 
             catch
             {
-               Globals.clients[id].Disconnect();
+               await Globals.clients[id].Disconnect();
             }
         }
 
-        public static async Task PositionAndOrientation(byte[] networkPacket, NetworkStream stream, int id)
+        public static async Task PositionAndOrientation(byte[] networkPacket, Socket stream, int id)
         {
             try
             {
-                Ping(stream, id);
+                await Ping(stream, id);
                 {
                     PositionAndOrientation packet = new PositionAndOrientation();
                     packet.ReadPacket(networkPacket);
 
                     byte playerId = (byte)id;
 
-                    await Task.Run(() => SendAllPlayers(packet.SendPacket((sbyte)playerId)));    
+                    await SendAllPlayers(packet.SendPacket((sbyte)playerId));    
                 }
 
             }
             catch
             {
                 Console.WriteLine("target in sight #3");
-                Globals.clients[id].Disconnect();
+                await Globals.clients[id].Disconnect();
             }
 
         }
 
-        public static async Task MessageHandle(byte[] networkPacket, NetworkStream stream, int id, string username)
+        public static async Task MessageHandle(byte[] networkPacket, Socket stream, int id, string username)
         {
             try
             {
-                Ping(stream, id);
+                await Ping(stream, id);
                 {
                     GameMessage packet = new GameMessage();
                     packet.ReadPacket(networkPacket);
@@ -192,7 +201,7 @@ namespace NetClassic
                     
                     if(isCommand == false)
                     {
-                        SendAllPlayers(GameMessage.SendPacket(playerId, username+": "+ message));
+                        await SendAllPlayers(GameMessage.SendPacket(playerId, username+": "+ message));
                         Console.WriteLine(username+" says: "+message); 
                     }
                     else
@@ -232,12 +241,12 @@ namespace NetClassic
                             }
                             else
                             {
-                                await stream.WriteAsync(GameMessage.SendPacket(255, "Unknown command!"));
+                                await stream.SendAsync(GameMessage.SendPacket(255, "Unknown command!"));
                             }
                         }
                         else
                         {
-                            await stream.WriteAsync(GameMessage.SendPacket(255, "You're not a server admin!"));
+                            await stream.SendAsync(GameMessage.SendPacket(255, "You're not a server admin!"));
                         }
                     }
                     
@@ -245,15 +254,15 @@ namespace NetClassic
             }
             catch
             {
-                Globals.clients[id].Disconnect();
+                await Globals.clients[id].Disconnect();
             }
         }
 
-        public static async Task SetBlock(byte[] networkPacket, NetworkStream stream, int id)
+        public static async Task SetBlock(byte[] networkPacket, Socket stream, int id)
         {
             try
             {
-                Ping(stream, id);
+                await Ping(stream, id);
                 {
                     Vector3 blockTwoLeft = new Vector3(0, 0, 0);
                     Vector3 blockTwoRight = new Vector3(0, 0, 0);
@@ -264,21 +273,20 @@ namespace NetClassic
 
                     
                     Block packet = new();
-                    Physics physics = new();
                     packet.ReadPacket(networkPacket);
 
-                    SendAllPlayers(packet.SendPacket(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode));
+                    await SendAllPlayers(packet.SendPacket(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode));
 
                     if(packet.BlockType == 19 && packet.Mode == 0x01) //If it's a sponge
                     {
-                        physics.CreateBoundingBox(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
+                        _ = Physics.CreateBoundingBox(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
                     }
 
                     if(packet.BlockType == 8 || packet.BlockType == 10) //If it's water, check flood
                     {
-                       physics.Flood(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
+                       _ = Physics.Flood(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
                     }
-
+        
                     bool isLeft = Physics.isBlock((short)(packet.X - 1), packet.Y, packet.Z);
                     bool isRight = Physics.isBlock((short)(packet.X + 1), packet.Y, packet.Z);
                     bool isForward = Physics.isBlock(packet.X, packet.Y, (short)(packet.Z + 1));
@@ -316,45 +324,46 @@ namespace NetClassic
                     {
                         blockTwoBottom = new Vector3(packet.X, (short)(packet.Y - 1), packet.Z);
                     }
+                    
 
-                    await physics.CompareTwoBlocks(new Vector3(packet.X, packet.Y, packet.Z), blockTwoLeft,
+                    _ = Physics.CompareTwoBlocks(new Vector3(packet.X, packet.Y, packet.Z), blockTwoLeft,
                     blockTwoRight, blockTwoForward, blockTwoBackward, blockTwoTop, blockTwoBottom);
-
+                    
                     //Sand/Gravel Physics
                     if(Globals.world.BlockData[(packet.Y * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 12
                     || Globals.world.BlockData[(packet.Y * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 13)
                     {
-                        short newY = physics.BlockFall(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
-                        SendAllPlayers(packet.SendPacket(packet.X, newY, packet.Z, packet.BlockType, packet.Mode));
+                        short newY = await Physics.BlockFall(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
+                        await SendAllPlayers(packet.SendPacket(packet.X, newY, packet.Z, packet.BlockType, packet.Mode));
                     }
-
+                    
                     if(Globals.world.BlockData[((packet.Y-1) * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 2)
                     {
-                        physics.BlockChange(new Vector3(packet.X, packet.Y-1, packet.Z), 3, false);
+                        _ = Physics.BlockChange(new Vector3(packet.X, packet.Y-1, packet.Z), 3, false);
                     }
-
+                    
                     if(Globals.world.BlockData[(packet.Y * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 3)
                     {
-                        physics.BlockChange(new Vector3(packet.X, packet.Y, packet.Z), 3, true);
+                        _ = Physics.BlockChange(new Vector3(packet.X, packet.Y, packet.Z), 3, true);
                     }
 
-                    int checkBlockBelow = physics.CheckBlockCoveredInt(new Vector3(packet.X, packet.Y, packet.Z));
+                    int checkBlockBelow = Physics.CheckBlockCoveredInt(new Vector3(packet.X, packet.Y, packet.Z));
 
                     if(Globals.world.BlockData[(checkBlockBelow * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 2)
                     {
-                        physics.BlockChange(new Vector3(packet.X, checkBlockBelow, packet.Z), 3, false);
+                        _ = Physics.BlockChange(new Vector3(packet.X, checkBlockBelow, packet.Z), 3, false);
                     }
 
                     if(packet.Mode == 0x00)
                     {
-                        physics.MultipleBlockFall(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
+                        _ = Physics.MultipleBlockFall(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
                     }
 
                 }
             }
             catch
             {
-                Globals.clients[id].Disconnect();
+                await Globals.clients[id].Disconnect();
             }
         }
     }

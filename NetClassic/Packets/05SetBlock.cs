@@ -36,12 +36,20 @@ namespace NetClassic
             {
                 ms.WriteByte(0);
                 Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] = 0;
+                while(Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] != 0)
+                {
+                    Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] = 0;
+                }
             }
             
             if (Mode == 0x01)
             {
                 ms.WriteByte(BlockType);
                 Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] = BlockType;
+                while(Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] != BlockType)
+                {
+                    Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] = BlockType;
+                }
             }
             return ms.ToArray();
         } 

@@ -10,9 +10,8 @@ namespace NetClassic
         public int id;
         public string? username;
         public string? IpAddress;
-        public TcpClient? playerClient;
+        public Socket? playerClient;
         private MemoryStream buffer = new MemoryStream();
-        public NetworkStream? stream;
         public bool inGame = false;
         public byte UserType = 0x64; //0x00 -> Not admin, 0x64 -> op
         public async Task Run()
@@ -22,12 +21,11 @@ namespace NetClassic
                 try
                 {
                     byte[] data = new byte[1024];
-                    int bytesRead = await playerClient.GetStream().ReadAsync(data, 0, data.Length);
-                    stream = playerClient.GetStream();
+                    int bytesRead = await playerClient.ReceiveAsync(data);
                     if(bytesRead <= 0)
                     {
                         //Console.WriteLine("Player disconnected");
-                        Disconnect();
+                        _ = Disconnect();
                         return;
                     }
                     buffer.Write(data, 0, bytesRead);
@@ -37,19 +35,19 @@ namespace NetClassic
                     buffer.SetLength(0);
                     if(packet != null)
                     {
-                        await HandlePacket(packet, playerClient.GetStream(), id);
+                        await HandlePacket(packet, playerClient, id);
                     }
                 }
                 catch
                 {
                     //Console.WriteLine("Player disconnected");
-                    Disconnect();
+                    _ = Disconnect();
                     return;
                 }
             }
         }
 
-        public void Disconnect()
+        public async Task Disconnect()
         {
             Console.WriteLine(username + " left the game");
             playerClient?.Close();
@@ -57,7 +55,7 @@ namespace NetClassic
             IpAddress = null;
             if(inGame)
             {
-                ServerHandle.SendAllPlayers(DespawnPlayer.SendPacket((sbyte)id));
+                await Task.Run(() => ServerHandle.SendAllPlayers(DespawnPlayer.SendPacket((sbyte)id)));
             }
             //Move all players down one.
             /*
@@ -69,25 +67,25 @@ namespace NetClassic
                 }
             }
             */
-            ServerHandle.SendAllPlayers(GameMessage.SendPacket(255, username + " left the game"));  
+            await Task.Run(() => ServerHandle.SendAllPlayers(GameMessage.SendPacket(255, username + " left the game")));  
         }
 
-        public async Task HandlePacket(byte[] packet, NetworkStream stream, int id)
+        public async Task HandlePacket(byte[] packet, Socket client, int id)
         {
             //Switching between packet types
             switch(packet[0])
             {
                 case (byte)ClientPacketTypes.PlayerIdentification:
-                    await ServerHandle.PlayerIdentification(packet, stream, id);
+                    await ServerHandle.PlayerIdentification(packet, client, id);
                     break;
                 case (byte)ClientPacketTypes.SetBlock:
-                    await ServerHandle.SetBlock(packet, stream, id);
-                    break;
-                case (byte)ClientPacketTypes.PositionOrientation:
-                    await ServerHandle.PositionAndOrientation(packet, stream, id);
+                    await ServerHandle.SetBlock(packet, client, id);
                     break;
                 case (byte)ClientPacketTypes.Message:
-                    await ServerHandle.MessageHandle(packet, stream, id, username);
+                    await ServerHandle.MessageHandle(packet, client, id, username);
+                    break;
+                case (byte)ClientPacketTypes.PositionOrientation:
+                    await ServerHandle.PositionAndOrientation(packet, client, id);
                     break;
                 default:
                     Console.WriteLine("Unknown packet received");
