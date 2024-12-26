@@ -13,7 +13,7 @@ namespace NetClassic
         public Socket? playerClient;
         private MemoryStream buffer = new MemoryStream();
         public bool inGame = false;
-        public byte UserType = 0x64; //0x00 -> Not admin, 0x64 -> op
+        public byte UserType = 0x00; //0x00 -> Not admin, 0x64 -> op
         public async Task Run()
         {
             while(playerClient != null && playerClient.Connected)
@@ -88,7 +88,7 @@ namespace NetClassic
                     await ServerHandle.PositionAndOrientation(packet, client, id);
                     break;
                 default:
-                    Console.WriteLine("Unknown packet received");
+                    Console.WriteLine("Unknown packet received: "+packet[0]);
                     break;
             }
         }

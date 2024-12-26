@@ -29,6 +29,8 @@ namespace NetClassic
                 await otherUserStream.SendAsync(packet.SendPacket(0x64));
                 await otherUserStream.SendAsync(GameMessage.SendPacket(255, "You're now op!"));
                 Globals.clients[userID].UserType = 0x64;
+
+                FileHandle.WriteName(getName, Globals.adminsDirectory);
             }
             else
             {

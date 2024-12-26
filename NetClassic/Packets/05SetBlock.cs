@@ -34,21 +34,37 @@ namespace NetClassic
 
             if (Mode == 0x00)
             {
-                ms.WriteByte(0);
-                Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] = 0;
-                while(Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] != 0)
+                if(Globals.InBounds(X, Y, Z))
                 {
-                    Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] = 0;
+                    ms.WriteByte(0);
+                    Globals.world.BlockData[Globals.GetBlockIndex(X, Y, Z)] = 0;
+                    while(Globals.world.BlockData[Globals.GetBlockIndex(X, Y, Z)] != 0)
+                    {
+                        Globals.world.BlockData[Globals.GetBlockIndex(X, Y, Z)] = 0;
+                    }
+                }
+                else
+                {
+                    //We return the same value.
+                    ms.WriteByte(Globals.world.BlockData[Globals.GetBlockIndex(X, Y, Z)]);
                 }
             }
             
             if (Mode == 0x01)
             {
-                ms.WriteByte(BlockType);
-                Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] = BlockType;
-                while(Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] != BlockType)
+                if(Globals.InBounds(X, Y, Z))
                 {
-                    Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] = BlockType;
+                    ms.WriteByte(BlockType);
+                    Globals.world.BlockData[Globals.GetBlockIndex(X, Y, Z)] = BlockType;
+                    while(Globals.world.BlockData[Globals.GetBlockIndex(X, Y, Z)] != BlockType)
+                    {
+                        Globals.world.BlockData[Globals.GetBlockIndex(X, Y, Z)] = BlockType;
+                    }
+                }
+                else
+                {
+                    //We return the same value.
+                    ms.WriteByte(Globals.world.BlockData[Globals.GetBlockIndex(X, Y, Z)]);
                 }
             }
             return ms.ToArray();

@@ -29,21 +29,48 @@ namespace NetClassic
         public static List<Client> clients = new List<Client>();
 
         public static string serverProperties = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)+"\\server.properties";
+        public static string adminsDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)+"\\admins.txt";
+        public static string bannedDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)+"\\banned.txt";
+        public static string bannedIPDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)+"\\banned-ip.txt";
         
         public static Classicworld world = new Classicworld(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)+ "\\serverLevel.cw");
 
-        public static int MaxPlayers = Convert.ToInt32(FileHandle.readValue(serverProperties, "max-players"));
+        public static int MaxPlayers = Convert.ToInt32(FileHandle.ReadValue(serverProperties, "max-players"));
 
-        public static bool nameVerfication = Convert.ToBoolean(FileHandle.readValue(serverProperties, "verify-names"));
+        public static bool nameVerfication = Convert.ToBoolean(FileHandle.ReadValue(serverProperties, "verify-names"));
 
-        public static string serverName = FileHandle.readValue(serverProperties, "server-name");
+        public static string serverName = FileHandle.ReadValue(serverProperties, "server-name");
 
-        public static string serverMotd = FileHandle.readValue(serverProperties, "motd");
+        public static string serverMotd = FileHandle.ReadValue(serverProperties, "motd");
 
-        public static bool isOnline = Convert.ToBoolean(FileHandle.readValue(serverProperties, "public"));
-        public static string salt = FileHandle.readValue(serverProperties, "salt");
+        public static bool isOnline = Convert.ToBoolean(FileHandle.ReadValue(serverProperties, "public"));
+        public static string salt = FileHandle.ReadValue(serverProperties, "salt");
 
         public static TcpListener server = new TcpListener(IPAddress.Any, 25565);
+
+        //Figure out to create my own
+        public static int getBlockID(int x, int y, int z) 
+        {
+            try
+            {
+                return world.BlockData[(y * world.SizeZ + z) * world.SizeX + x];
+            }
+            catch
+            {
+                //We return block as air due to we are out of bounds.
+                return 0;
+            }
+        }
+
+        public static int GetBlockIndex(int x, int y, int z) 
+        {
+            return (y * world.SizeZ + z) * world.SizeX + x;
+        }
+
+        public static bool InBounds( int x, int y, int z ) 
+        {
+            return x < world.SizeX && y < world.SizeY && z < world.SizeZ && x >= 0 && y >= 0 && z >= 0;
+        }
     }
 
     internal class Program
@@ -53,9 +80,9 @@ namespace NetClassic
 
         public class Response
         {
-            public List<List<string>> errors { get; set; }
-            public string response { get; set; }
-            public string status { get; set; }
+            public List<List<string>>? errors { get; set; }
+            public string? response { get; set; }
+            public string? status { get; set; }
         }
         public static async Task SendServerHeartbeat()
         {   
@@ -68,7 +95,7 @@ namespace NetClassic
                 { "max", Globals.MaxPlayers.ToString() },
                 { "public", Globals.isOnline.ToString() },
                 { "salt", Globals.salt },
-                { "software", "&cNetClassic &av0.5.1" },
+                { "software", "&cNetClassic &av0.5.2" },
                 { "web", false.ToString() },
             };
 
@@ -101,7 +128,7 @@ namespace NetClassic
                     { "max", Globals.MaxPlayers.ToString() },
                     { "public", Globals.isOnline.ToString() },
                     { "salt", Globals.salt },
-                    { "software", "&cNetClassic &av0.5.1" },
+                    { "software", "&cNetClassic &av0.5.2" },
                     { "web", false.ToString() },
                 };
                 content = new FormUrlEncodedContent(values);

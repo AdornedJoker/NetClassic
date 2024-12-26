@@ -26,7 +26,6 @@ namespace NetClassic
 
                 DisconnectPlayer disconnectPacket = new DisconnectPlayer();
                 await otherUserPlayer.SendAsync(disconnectPacket.SendPacket("You were kicked"));
-                _ = Globals.clients[userID].Disconnect();
             }
             else
             {

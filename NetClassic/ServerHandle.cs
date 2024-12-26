@@ -19,7 +19,10 @@ namespace NetClassic
                 {
                     try
                     {
-                        await client.playerClient.SendAsync(data);
+                        await Ping(client.playerClient);
+                        {
+                            await client.playerClient.SendAsync(data);
+                        }
                     }
                     catch
                     {
@@ -39,7 +42,10 @@ namespace NetClassic
                 {       
                     try
                     {
-                         await client.playerClient.SendAsync(data);
+                        await Ping(client.playerClient);
+                        {
+                            await client.playerClient.SendAsync(data);
+                        }
                     }
                     catch
                     {
@@ -49,11 +55,11 @@ namespace NetClassic
             }
         }
 
-        public static async Task Ping(Socket stream, int id)
+        public static async Task Ping(Socket stream)
         {
             try
             {
-                await Task.Run(() => stream.SendAsync(new ArraySegment<byte>(new byte[] { (byte)ServerPacketTypes.Ping })));
+                await stream.SendAsync(new ArraySegment<byte>(new byte[] { (byte)ServerPacketTypes.Ping }));
             }
             catch (Exception e)
             {
@@ -112,6 +118,11 @@ namespace NetClassic
                     }
                 }
 
+                if(FileHandle.CheckName(username, Globals.adminsDirectory) == true)
+                {
+                    Globals.clients[id].UserType = 0x64;
+                }
+
                 if (Globals.clients[id].playerClient != null)
                 {
                     await stream.SendAsync(packet.SendPacket(packet.protocolID, Globals.clients[id].UserType));
@@ -165,7 +176,7 @@ namespace NetClassic
         {
             try
             {
-                await Ping(stream, id);
+                await Ping(stream);
                 {
                     PositionAndOrientation packet = new PositionAndOrientation();
                     packet.ReadPacket(networkPacket);
@@ -188,7 +199,7 @@ namespace NetClassic
         {
             try
             {
-                await Ping(stream, id);
+                await Ping(stream);
                 {
                     GameMessage packet = new GameMessage();
                     packet.ReadPacket(networkPacket);
@@ -262,7 +273,7 @@ namespace NetClassic
         {
             try
             {
-                await Ping(stream, id);
+                await Ping(stream);
                 {
                     Vector3 blockTwoLeft = new Vector3(0, 0, 0);
                     Vector3 blockTwoRight = new Vector3(0, 0, 0);
@@ -275,90 +286,94 @@ namespace NetClassic
                     Block packet = new();
                     packet.ReadPacket(networkPacket);
 
-                    await SendAllPlayers(packet.SendPacket(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode));
-
-                    if(packet.BlockType == 19 && packet.Mode == 0x01) //If it's a sponge
+                    if(Globals.InBounds(packet.X, packet.Y, packet.Z))
                     {
-                        _ = Physics.CreateBoundingBox(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
-                    }
 
-                    if(packet.BlockType == 8 || packet.BlockType == 10) //If it's water, check flood
-                    {
-                       _ = Physics.Flood(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
-                    }
+                        await SendAllPlayers(packet.SendPacket(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode));
+
+                        if(packet.BlockType == 19 && packet.Mode == 0x01) //If it's a sponge
+                        {
+                            _ = Physics.CreateBoundingBox(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
+                        }
+
+                        if(packet.BlockType == 8 || packet.BlockType == 10) //If it's water, check flood
+                        {
+                            _ = Physics.Flood(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
+                        }
+            
+                        bool isLeft = Physics.isBlock((short)(packet.X - 1), packet.Y, packet.Z);
+                        bool isRight = Physics.isBlock((short)(packet.X + 1), packet.Y, packet.Z);
+                        bool isForward = Physics.isBlock(packet.X, packet.Y, (short)(packet.Z + 1));
+                        bool isBackward = Physics.isBlock(packet.X, packet.Y, (short)(packet.Z - 1));
+                        bool isTop = Physics.isBlock(packet.X, (short)(packet.Y + 1), packet.Z);
+                        bool isBottom = Physics.isBlock(packet.X, (short)(packet.Y - 1), packet.Z);
+
+                        if(isLeft)
+                        {
+                            blockTwoLeft = new Vector3((short)(packet.X - 1), packet.Y, packet.Z);
+                        }
+
+                        if(isRight)
+                        {
+                            blockTwoRight = new Vector3((short)(packet.X + 1), packet.Y, packet.Z);
+                        }
+
+                        if(isForward)
+                        {
+                            blockTwoForward = new Vector3(packet.X, packet.Y, (short)(packet.Z + 1));
+                        }
+
+                        if(isBackward)
+                        {
         
-                    bool isLeft = Physics.isBlock((short)(packet.X - 1), packet.Y, packet.Z);
-                    bool isRight = Physics.isBlock((short)(packet.X + 1), packet.Y, packet.Z);
-                    bool isForward = Physics.isBlock(packet.X, packet.Y, (short)(packet.Z + 1));
-                    bool isBackward = Physics.isBlock(packet.X, packet.Y, (short)(packet.Z - 1));
-                    bool isTop = Physics.isBlock(packet.X, (short)(packet.Y + 1), packet.Z);
-                    bool isBottom = Physics.isBlock(packet.X, (short)(packet.Y - 1), packet.Z);
+                            blockTwoBackward = new Vector3(packet.X, packet.Y, (short)(packet.Z - 1));
+                        }
 
-                    if(isLeft)
-                    {
-                        blockTwoLeft = new Vector3((short)(packet.X - 1), packet.Y, packet.Z);
-                    }
+                        if(isTop)
+                        {
+                            blockTwoTop = new Vector3(packet.X, (short)(packet.Y + 1), packet.Z);
+                        }
 
-                    if(isRight)
-                    {
-                        blockTwoRight = new Vector3((short)(packet.X + 1), packet.Y, packet.Z);
-                    }
+                        if(isBottom)
+                        {
+                            blockTwoBottom = new Vector3(packet.X, (short)(packet.Y - 1), packet.Z);
+                        }
+                        
 
-                     if(isForward)
-                    {
-                        blockTwoForward = new Vector3(packet.X, packet.Y, (short)(packet.Z + 1));
-                    }
+                        _ = Physics.CompareTwoBlocks(new Vector3(packet.X, packet.Y, packet.Z), blockTwoLeft,
+                        blockTwoRight, blockTwoForward, blockTwoBackward, blockTwoTop, blockTwoBottom);
+                        
+                        //Sand/Gravel Physics
+                        if(Globals.getBlockID(packet.X, packet.Y, packet.Z) == 12
+                        || Globals.getBlockID(packet.X, packet.Y, packet.Z) == 13)
+                        {
+                            short newY = await Physics.BlockFall(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
+                            await SendAllPlayers(packet.SendPacket(packet.X, newY, packet.Z, packet.BlockType, packet.Mode));
+                        }
+                        
+                        if(Globals.getBlockID(packet.X, packet.Y-1, packet.Z) == 2)
+                        {
+                            _ = Physics.BlockChange(new Vector3(packet.X, packet.Y-1, packet.Z), 3, false);
+                        }
+                        
+                        if(Globals.getBlockID(packet.X, packet.Y, packet.Z) == 3)
+                        {
+                            _ = Physics.BlockChange(new Vector3(packet.X, packet.Y, packet.Z), 3, true);
+                        }
 
-                    if(isBackward)
-                    {
-    
-                        blockTwoBackward = new Vector3(packet.X, packet.Y, (short)(packet.Z - 1));
-                    }
+                        int checkBlockBelow = Physics.CheckBlockCoveredInt(new Vector3(packet.X, packet.Y, packet.Z));
 
-                    if(isTop)
-                    {
-                        blockTwoTop = new Vector3(packet.X, (short)(packet.Y + 1), packet.Z);
-                    }
+                        if(Globals.getBlockID(packet.X, checkBlockBelow, packet.Z) == 2)
+                        {
+                            _ = Physics.BlockChange(new Vector3(packet.X, checkBlockBelow, packet.Z), 3, false);
+                        }
 
-                    if(isBottom)
-                    {
-                        blockTwoBottom = new Vector3(packet.X, (short)(packet.Y - 1), packet.Z);
-                    }
-                    
+                        if(packet.Mode == 0x00)
+                        {
+                            _ = Physics.MultipleBlockFall(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
+                        }
 
-                    _ = Physics.CompareTwoBlocks(new Vector3(packet.X, packet.Y, packet.Z), blockTwoLeft,
-                    blockTwoRight, blockTwoForward, blockTwoBackward, blockTwoTop, blockTwoBottom);
-                    
-                    //Sand/Gravel Physics
-                    if(Globals.world.BlockData[(packet.Y * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 12
-                    || Globals.world.BlockData[(packet.Y * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 13)
-                    {
-                        short newY = await Physics.BlockFall(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
-                        await SendAllPlayers(packet.SendPacket(packet.X, newY, packet.Z, packet.BlockType, packet.Mode));
                     }
-                    
-                    if(Globals.world.BlockData[((packet.Y-1) * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 2)
-                    {
-                        _ = Physics.BlockChange(new Vector3(packet.X, packet.Y-1, packet.Z), 3, false);
-                    }
-                    
-                    if(Globals.world.BlockData[(packet.Y * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 3)
-                    {
-                        _ = Physics.BlockChange(new Vector3(packet.X, packet.Y, packet.Z), 3, true);
-                    }
-
-                    int checkBlockBelow = Physics.CheckBlockCoveredInt(new Vector3(packet.X, packet.Y, packet.Z));
-
-                    if(Globals.world.BlockData[(checkBlockBelow * Globals.world.SizeZ + packet.Z) * Globals.world.SizeX + packet.X] == 2)
-                    {
-                        _ = Physics.BlockChange(new Vector3(packet.X, checkBlockBelow, packet.Z), 3, false);
-                    }
-
-                    if(packet.Mode == 0x00)
-                    {
-                        _ = Physics.MultipleBlockFall(packet.X, packet.Y, packet.Z, packet.BlockType, packet.Mode);
-                    }
-
                 }
             }
             catch

@@ -29,6 +29,8 @@ namespace NetClassic
                 await otherUserStream.SendAsync(packet.SendPacket(0x00));
                 await otherUserStream.SendAsync(GameMessage.SendPacket(255, "You're no longer op!"));
                 Globals.clients[userID].UserType = 0x00;
+
+                //TODO: GET THIS TO WORK: FileHandle.RemoveName(getName, Globals.adminsDirectory);
             }
             else
             {

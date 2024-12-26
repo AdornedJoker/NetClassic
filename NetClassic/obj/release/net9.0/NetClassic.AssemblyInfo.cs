@@ -11,9 +11,9 @@ using System;
 using System.Reflection;
 
 [assembly: System.Reflection.AssemblyCompanyAttribute("NetClassic")]
-[assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
+[assembly: System.Reflection.AssemblyConfigurationAttribute("release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6057c7475bdad1f2d5e37249866222fd9ed99d15")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3bebb85a4abf95ece62874e85b886f8dea20ec96")]
 [assembly: System.Reflection.AssemblyProductAttribute("NetClassic")]
 [assembly: System.Reflection.AssemblyTitleAttribute("NetClassic")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

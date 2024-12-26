@@ -28,9 +28,9 @@ namespace NetClassic
             if(BlockType == 12 || BlockType == 13) //Sand or Gravel
             {
                 await ServerHandle.SendAllPlayers(packet.SendPacket(X, Y, Z, 0x00, Mode));
-                while(Globals.world.BlockData[(sucessY * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 0 
-                || Globals.world.BlockData[(sucessY * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 8
-                || Globals.world.BlockData[(sucessY * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 9)
+                while(Globals.getBlockID(X, sucessY, Z) == 0 
+                || Globals.getBlockID(X, sucessY, Z) == 8
+                || Globals.getBlockID(X, sucessY, Z) == 9)
                 {
                     sucessY--;
                 }
@@ -43,7 +43,7 @@ namespace NetClassic
         {
             for (int i = Y + 1; i < Globals.world.SizeY; i++)
             {
-                byte blockTypeTwoTop = Globals.world.BlockData[(i * Globals.world.SizeZ + Z) * Globals.world.SizeX + X];
+                byte blockTypeTwoTop = (byte)Globals.getBlockID(X, i, Z);
 
                 if(blockTypeTwoTop != 12 && blockTypeTwoTop != 13)
                 {
@@ -118,8 +118,8 @@ namespace NetClassic
                     {
                         for(short tempZ = (short)(Z - 2); tempZ <= Z+2; tempZ++)
                         {
-                            if (Globals.world.BlockData[(tempY * Globals.world.SizeZ + tempZ) * Globals.world.SizeX + tempX] == 8 
-                            || Globals.world.BlockData[(tempY * Globals.world.SizeZ + tempZ) * Globals.world.SizeX + tempX] == 9)
+                            if (Globals.getBlockID(tempX, tempY, tempZ) == 8 
+                            || Globals.getBlockID(tempX, tempY, tempZ) == 9)
                             {
                                 await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, 0x00, Mode));
                             }
@@ -132,12 +132,12 @@ namespace NetClassic
         public static async Task CompareTwoBlocks(Vector3 BlockOne, Vector3 blockTwoLeft,
         Vector3 blockTwoRight, Vector3 blockTwoForward, Vector3 blockTwoBackwards, Vector3 blockTwoTop, Vector3 blockTwoBottom)
         {
-            byte blockTypeTwoLeft = Globals.world.BlockData[(BlockOne.Y * Globals.world.SizeZ + BlockOne.Z) * Globals.world.SizeX + (BlockOne.X - 1)];
-            byte blockTypeTwoRight = Globals.world.BlockData[(BlockOne.Y * Globals.world.SizeZ + BlockOne.Z) * Globals.world.SizeX + (BlockOne.X + 1)];
-            byte blockTypeTwoForward = Globals.world.BlockData[(BlockOne.Y * Globals.world.SizeZ + (BlockOne.Z + 1)) * Globals.world.SizeX + BlockOne.X];
-            byte blockTypeTwoBackward = Globals.world.BlockData[(BlockOne.Y * Globals.world.SizeZ + (BlockOne.Z - 1)) * Globals.world.SizeX + BlockOne.X];
-            byte blockTypeTwoTop = Globals.world.BlockData[((BlockOne.Y + 1) * Globals.world.SizeZ + BlockOne.Z) * Globals.world.SizeX + BlockOne.X];
-            byte blockTypeTwoBottom = Globals.world.BlockData[((BlockOne.Y - 1) * Globals.world.SizeZ + BlockOne.Z) * Globals.world.SizeX + BlockOne.X];
+            byte blockTypeTwoLeft = (byte)Globals.getBlockID(BlockOne.X - 1, BlockOne.Y, BlockOne.Z); 
+            byte blockTypeTwoRight = (byte)Globals.getBlockID(BlockOne.X + 1, BlockOne.Y, BlockOne.Z); 
+            byte blockTypeTwoForward = (byte)Globals.getBlockID(BlockOne.X, BlockOne.Y, BlockOne.Z + 1);
+            byte blockTypeTwoBackward = (byte)Globals.getBlockID(BlockOne.X, BlockOne.Y, BlockOne.Z - 1);
+            byte blockTypeTwoTop = (byte)Globals.getBlockID(BlockOne.X, BlockOne.Y + 1, BlockOne.Z);
+            byte blockTypeTwoBottom = (byte)Globals.getBlockID(BlockOne.X, BlockOne.Y - 1, BlockOne.Z);
             
             //Console.WriteLine("Left: " + blockTypeTwoLeft);
             //Console.WriteLine("Right: " + blockTypeTwoRight);
@@ -216,7 +216,7 @@ namespace NetClassic
 
                     ///THIS FUNCTION WILL BE SEPERATE AND INSTEAD WILL COUNT THE BLOCKS IN THE AIR
                     await Task.Delay(10000);
-                    byte blockTypeTwoTop = Globals.world.BlockData[(blockTwoTop.Y * Globals.world.SizeZ + blockTwoTop.Z) * Globals.world.SizeX + blockTwoTop.X];
+                    byte blockTypeTwoTop = (byte)Globals.getBlockID(blockTwoTop.X, blockTwoTop.Y, blockTwoTop.Z);
                     
                     if(CheckBlockCovered(BlockTwo))
                     {
@@ -231,7 +231,7 @@ namespace NetClassic
             else
             {
                 //Console.WriteLine("Cancling grass to dirt.");
-                byte blockType = Globals.world.BlockData[(BlockTwo.Y * Globals.world.SizeZ + BlockTwo.Z) * Globals.world.SizeX + BlockTwo.X];
+                byte blockType = (byte)Globals.getBlockID(BlockTwo.X, BlockTwo.Y, BlockTwo.Z);
                 if(blockType == 3)
                 {
                     await ChangeDirt2Grass(BlockTwo);
@@ -246,7 +246,7 @@ namespace NetClassic
         {
             for (int i = BlockOne.Y + 1; i < Globals.world.SizeY; i++)
             {
-                byte blockTypeTwoTop = Globals.world.BlockData[(i * Globals.world.SizeZ + BlockOne.Z) * Globals.world.SizeX + BlockOne.X];
+                byte blockTypeTwoTop = (byte)Globals.getBlockID(BlockOne.X, i, BlockOne.Z);
 
                 if(blockTypeTwoTop != 0)
                 {
@@ -279,7 +279,7 @@ namespace NetClassic
             for (int i = BlockOne.Y - 1; i > 0; i--)
             {
                 failSafe = i;
-                byte blockTypeTwoTop = Globals.world.BlockData[(i * Globals.world.SizeZ + BlockOne.Z) * Globals.world.SizeX + BlockOne.X];
+                byte blockTypeTwoTop = (byte)Globals.getBlockID(BlockOne.X, i, BlockOne.Z);
 
                 if(blockTypeTwoTop != 0)
                 {
@@ -312,43 +312,34 @@ namespace NetClassic
 
             await Task.Delay(milliSeconds.Next(0, 30000));
 
-            if(!CheckBlockCovered(BlockTwo) && Globals.world.BlockData[(BlockTwo.Y * Globals.world.SizeZ + BlockTwo.Z) * Globals.world.SizeX + BlockTwo.X] != 0)
+            if(!CheckBlockCovered(BlockTwo) && Globals.getBlockID(BlockTwo.X, BlockTwo.Y, BlockTwo.Z) == 3)
             {
                 await ServerHandle.SendAllPlayers(packet.SendPacket((short)BlockTwo.X, (short)BlockTwo.Y, (short)BlockTwo.Z, 2, 0x01));
-            }
-            else
-            {
-                if(Globals.world.BlockData[(BlockTwo.Y * Globals.world.SizeZ + BlockTwo.Z) * Globals.world.SizeX + BlockTwo.X] != 0)
-                {
-                    await BlockChange(new Vector3(BlockTwo.X, BlockTwo.Y, BlockTwo.Z), 3, false);
-                }
             }
         }
 
         public static async Task<bool> isAir(short X, short Y, short Z, bool isLava)
         {
-            if (Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 0 && 
-            Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] != 8
-            && Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] != 9 
-            || Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 37
-            || Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 38
-            || Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 39
-            || Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 40)
+            if (Globals.getBlockID(X, Y, Z) == 0 && 
+            Globals.getBlockID(X, Y, Z) != 8
+            && Globals.getBlockID(X, Y, Z) != 9 
+            || Globals.getBlockID(X, Y, Z) == 37
+            || Globals.getBlockID(X, Y, Z) == 38
+            || Globals.getBlockID(X, Y, Z) == 39
+            || Globals.getBlockID(X, Y, Z) == 40)
             {
                 return true;
             }
 
             //Turn lava to stone
-            if (Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 10 && isLava == false
-            || Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 11
-            && isLava == false)
+            if (Globals.getBlockID(X, Y, Z) == 10 && isLava == false || Globals.getBlockID(X, Y, Z) == 11 && isLava == false)
             {
                 await ServerHandle.SendAllPlayers(packet.SendPacket(X, Y, Z, 1, 0x01));
                 return false;
             }
 
-            if (Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 8 && isLava == true
-            || Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 9
+            if (Globals.getBlockID(X, Y, Z) == 8 && isLava == true
+            || Globals.getBlockID(X, Y, Z) == 9
             && isLava == true)
             {
                 await ServerHandle.SendAllPlayers(packet.SendPacket(X, Y, Z, 1, 0x01));
@@ -360,7 +351,7 @@ namespace NetClassic
 
        public static bool isBlock(short X, short Y, short Z)
         {
-            if (Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] != 0)
+            if (Globals.getBlockID(X, Y, Z) != 0)
             {
                 return true;
             }
@@ -373,10 +364,10 @@ namespace NetClassic
         // -the line.
         public static async Task Flood(short X, short Y, short Z, byte BlockType, byte Mode)
         {
-           if (Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 8 
-            || Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 9
-            || Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 10
-            || Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X] == 11)
+           if (Globals.getBlockID(X, Y, Z) == 8 
+            || Globals.getBlockID(X, Y, Z) == 9
+            || Globals.getBlockID(X, Y, Z) == 10
+            || Globals.getBlockID(X, Y, Z) == 11)
             {
                 bool isLava = false;
                 bool continueFlood = true;
@@ -386,7 +377,7 @@ namespace NetClassic
                 short tempY = Y;
                 int milliSeconds = 300;
 
-                byte tempType = Globals.world.BlockData[(Y * Globals.world.SizeZ + Z) * Globals.world.SizeX + X];
+                byte tempType = (byte)Globals.getBlockID(X, Y, Z);
 
                 //It's water
                 if(tempType == 9)
@@ -421,44 +412,14 @@ namespace NetClassic
                         break;
                     }
 
-
-                    //REDO CHECK OF MAP BORDER AGAIN LATER
-                    if(tempX > Globals.world.SizeX)
+                    if(Globals.InBounds(tempX, tempY, tempZ))
                     {
-                        //Console.WriteLine("Stopping Flood due to reached map border.");
-                        break;
+                        if(isLeft){tempX = (short)(tempX - 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempX = X;}
+                        if(isRight){tempX = (short)(tempX + 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempX = X;}
+                        if(isForward){tempZ = (short)(tempZ + 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempZ = Z;}
+                        if(isBackward){tempZ = (short)(tempZ - 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempZ = Z;}
+                        if(isBottom){tempY = (short)(tempY - 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempY = Y;}
                     }
-                    else if(tempY >= Globals.world.SizeY)
-                    {
-                        break;
-                    }
-                    else if( tempZ >= Globals.world.SizeZ)
-                    {
-                        break;
-                    }
-                    else if (tempX <= 0)
-                    {
-                        break;
-                    }
-                    else if (tempY <= 0)
-                    {
-                        break;
-                    }
-                    else if (tempZ <= 0)
-                    {
-                        break;
-                    }
-                    else if (tempZ <= 0 && tempX <= 0 || tempZ >= Globals.world.SizeZ && tempX >= Globals.world.SizeX)
-                    {
-                        break;
-                    }
-
-                    if(isLeft){tempX = (short)(tempX - 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempX = X;}
-                    if(isRight){tempX = (short)(tempX + 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempX = X;}
-                    if(isForward){tempZ = (short)(tempZ + 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempZ = Z;}
-                    if(isBackward){tempZ = (short)(tempZ - 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempZ = Z;}
-                    if(isBottom){tempY = (short)(tempY - 1); await ServerHandle.SendAllPlayers(packet.SendPacket(tempX, tempY, tempZ, tempType, Mode)); var LastTask = Flood(tempX, tempY, tempZ, tempType, Mode); TaskList.Add(LastTask); tempY = Y;}
-                    
                 }
             }
         }    
